@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-agents"
+version = "1.0.0"
+description = "多工作人设记忆底座：领域无关记忆底层 + 可插拔工作人设层"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+
+[tool.setuptools.packages.find]
+include = ["core*", "personas*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 保留 tmp_path 不自动清理（避免沙箱批量删除拦截导致进程异常退出；测试用独立 tmp 目录无污染）
+tmp_path_retention_policy = "none"
+addopts = "-p no:cacheprovider"

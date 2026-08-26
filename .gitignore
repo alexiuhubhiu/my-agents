@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行时数据（不纳入版本控制）
+data/
+backups/
+diary/
+*.db
+*.db-wal
+*.db-shm
+
+# 测试与覆盖率残留
+.pytest_cache/
+.pytest_tmp/
+.coverage
+.coverage.*
+coverage_report.json
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db
