@@ -15,8 +15,9 @@ flowchart TB
     end
 
     subgraph P["工作人设层（领域层）— personas/"]
+        G["<b>guide 引导助手（入口人设）</b><br/>guide_status / guide_create_persona / guide_switch_persona<br/>仅引导与调度，不执行任务、不承载会话"]
         T["<b>tutor 导师人设</b><br/>专属工具 tutor_record_interaction / tutor_query_errors / tutor_write_diary<br/>专属表 tutor_*（错题/复习/指标/日记/触发器/知识库）<br/>专属进化能力 C2/C3 + context 钩子"]
-        C1["coder 人设（未来）"]
+        C1["coder 人设（范例，已落地）"]
         C2["writer 人设（未来）"]
     end
 
@@ -72,6 +73,30 @@ flowchart TB
 | ④ 专属进化能力 + 上下文钩子 | `evolution.py` + `hooks.py`                  | C2 复习计划、C3 触发器休眠；get_context 注入学生状态/到期复习/错题预警                                                           |
 
 **人设层回答的问题**：这个「行当」需要哪些工具（做哪些事）、需要记住哪些领域专属数据（额外字段）、用什么人设语气说话（提示词）、如何自我进化（专属能力）。
+
+#### 2.2.1 入口人设 `guide`（仅引导与调度，不干活）
+
+`guide` 是系统管理层的**入口人设**，与 `tutor`/`coder` 的「干活」定位不同：它只负责把新用户引导到正确的人设，自身不做任何实际任务。
+
+| 维度 | 设计取舍 |
+| --- | --- |
+| 触发时机 | 系统启动时自动加载（`server.py` 默认 `_discover_personas` 含 `guide`）；首轮 `guide_status` 返回 `needs_onboarding` 才走引导 |
+| 职责边界 | 引导创建/切换工作人格 + 状态确认 + 需求不明时引导式提问；**不**调用 `start_session`/`log_episode`/`distill`，不承载会话 |
+| 极简配置 | 不声明 `context_hook` / `schema_ext` / `evolution`；档案存 `core_memory`（`persona_profile:<name>`），`onboarded` 走 `state_json`——最大化降低 token 消耗 |
+| 退出逻辑 | 引导完成（切换成功 + 标记 `onboarded`）即退出；后续工作由目标人设接管，互不干预 |
+| 工具集 | `guide_status`（判定是否需要引导）/ `guide_create_persona`（收集 name/purpose/tone/domain 建档 + 关键词推荐）/ `guide_switch_persona`（切换 + 标记 onboarded + 状态确认） |
+
+交互流程：
+
+```
+系统启动 → 加载 guide（入口）
+   ├─ guide_status(agent_id)
+   │     ├─ already_onboarded → 直接按 active_persona 工作（引导结束）
+   │     └─ needs_onboarding  → 进入引导
+   ├─ 引导式提问收集 4 参数（name / purpose / tone ∈ {严谨,轻松,鼓励型} / domain）
+   ├─ guide_create_persona(...) → 存 core_memory + 关键词推荐已部署人格
+   └─ guide_switch_persona(persona) → 切换 + onboarded=True + 状态确认 → 退出引导
+```
 
 ### 2.3 依赖方向（不可违反）
 

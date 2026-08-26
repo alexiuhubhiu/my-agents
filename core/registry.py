@@ -100,10 +100,10 @@ def load_persona(name: str, api: "MemoryAPI") -> PersonaContext:
     if man is None:
         raise LookupError(f"persona '{name}' 未调用 core.manifest.register() 完成声明")
 
-    # 2) Schema 扩展
+    # 2) Schema 扩展（用 api 的真实连接，避免 get_db() 单例在测试里指向错误库）
     if man.schema_ext:
         ext_mod = importlib.import_module(man.schema_ext)
-        applied = apply_persona_schema(ext_mod, name)
+        applied = apply_persona_schema(ext_mod, name, api.conn)
         log.info("persona %s schema 扩展应用: %s", name, applied)
 
     ctx = PersonaContext(manifest=man, api=api)

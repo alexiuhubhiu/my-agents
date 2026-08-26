@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from core import registry
 from core.api import MemoryAPI
@@ -37,13 +38,27 @@ def build_app(personas: list[str] | None = None):
     api = MemoryAPI()
     registry.bind_api(api)  # 供 switch_persona 内部使用
 
+    # ── 人设清单（含 guide 引导助手）──
+    persona_names = personas if personas is not None else _discover_personas()
+
+    # ── instructions：基础说明 + guide 引导协议（仅当加载了 guide）──
+    base_instructions = (
+        "my_agents 多工作人设记忆底座。\n"
+        "核心工具前缀 mem_（全人设共享）；人设工具带各自前缀（tutor_/coder_/guide_ 等）。\n"
+        "切换人设：mem_switch_persona(persona, agent_id)；数据按 agent_id 隔离。\n"
+        "首次交互先调用 guide_status(agent_id) 判定是否需要引导；已引导则直接按 active_persona 工作。"
+    )
+    guide_init = ""
+    if "guide" in persona_names:
+        _init_path = Path(__file__).parent / "personas/guide/prompts/init.md"
+        try:
+            guide_init = _init_path.read_text(encoding="utf-8")
+        except OSError:
+            pass
+
     mcp = FastMCP(
         name="my-agents",
-        instructions=(
-            "my_agents 多工作人设记忆底座。\n"
-            "核心工具前缀 mem_（全人设共享）；人设工具带各自前缀（tutor_ 等）。\n"
-            "切换人设：mem_switch_persona(persona, agent_id)；数据按 agent_id 隔离。"
-        ),
+        instructions=base_instructions + (f"\n\n{guide_init}" if guide_init else ""),
     )
 
     # ── 注册 core 通用工具 ──
@@ -55,7 +70,6 @@ def build_app(personas: list[str] | None = None):
         )
 
     # ── 加载并注册人设专属工具 ──
-    persona_names = personas if personas is not None else _discover_personas()
     for pname in persona_names:
         ctx = registry.load_persona(pname, api)
         for fn in ctx.extra_tools:

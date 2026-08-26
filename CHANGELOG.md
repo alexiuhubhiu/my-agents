@@ -2,6 +2,22 @@
 
 所有重要变更记录于此文件，格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [1.1.0] - 2026-08-26
+
+### 新增
+
+- **系统引导助手人设 `guide`（入口人设，仅引导与调度）**
+  - 定位：系统管理层入口，系统启动时自动启用；引导完成即退出，不执行实际任务、不承载会话
+  - 3 个专属工具（轻量）：`guide_status`（判定是否需要引导）/ `guide_create_persona`（收集参数建档 + 关键词推荐）/ `guide_switch_persona`（切换 + 标记 onboarded + 状态确认）
+  - 刻意不设置 `context_hook` / `schema_ext` / `evolution`，档案存 `core_memory`（`persona_profile:<name>`），`onboarded` 走 `state_json`，token 最小化
+  - 触发逻辑：首轮 `guide_status` 返回 `needs_onboarding` 才走引导；`already_onboarded` 立即按 `active_persona` 工作
+  - 验证脚本 `examples/verify_guide.py`：7 步全流程断言（新用户引导 → 建档推荐 → 切换 → 复检 → 持久化 → 非法切换拒绝）
+- **测试修复**：修正 `core.registry.load_persona` 调用 `apply_persona_schema` 时未传入 `api.conn`，导致 `get_db()` 单例在测试里错连隔离库、tutor `get_context` 的 `active_subjects` 种子数据丢失的回归问题；全套 35 个 pytest 现全绿
+
+### 文档
+
+- README / CHANGELOG / ARCHITECTURE 增加 `guide` 入口人设说明与引导协议
+
 ## [1.0.0] - 2026-08-26
 
 ### 新增
